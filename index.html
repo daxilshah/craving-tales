@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Craving Tales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Top-right user info and sign out -->
+    <div
+      class="fixed top-4 right-4 flex items-center gap-4 z-20 hidden"
+      id="signOutSection"
+    >
+      <span id="userDetails"></span>
+      <button id="signOutBtn" class="px-4 py-2 bg-black text-white rounded">
+        Sign Out
+      </button>
+    </div>
+
+    <!-- Sign in panel -->
+    <div id="signinPanel" class="flex justify-center items-center min-h-screen">
+      <div class="signin-box p-6 rounded-lg shadow-lg bg-white text-center">
+        <h1 class="text-2xl font-bold mb-6 text-center">
+          Craving Tales
+        </h1>
+        <p class="mb-4 font-semibold">Please sign in to continue</p>
+        <button
+          id="panelSignInBtn"
+          class="px-6 py-2 bg-black text-white rounded flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 533.5 544.3">
+            <path
+              fill="#4285F4"
+              d="M533.5 278.4c0-18.2-1.6-35.6-4.6-52.6H272v99.5h146.9c-6.3 33.7-25.2 62.4-53.7 81.7v67.9h86.6c50.6-46.6 79.7-115.3 79.7-196.5z"
+            />
+            <path
+              fill="#34A853"
+              d="M272 544.3c72.9 0 134.1-24.2 178.8-65.9l-86.6-67.9c-24.1 16.2-55 25.8-92.2 25.8-70.9 0-131-47.8-152.4-112.1H30.2v70.5C74.7 485.8 167.1 544.3 272 544.3z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M119.6 323.6c-5.1-15.4-8-31.8-8-48.6s2.9-33.2 8-48.6V155.9H30.2c-17.7 35.4-28 74.8-28 116s10.3 80.6 28 116l89.4-64.3z"
+            />
+            <path
+              fill="#EA4335"
+              d="M272 107.7c38.3 0 72.7 13.2 99.7 39.2l74.7-74.7C406.1 29.5 344.9 5.3 272 5.3 167.1 5.3 74.7 63.8 30.2 155.9l89.4 70.5c21.4-64.3 81.5-112.1 152.4-112.1z"
+            />
+          </svg>
+          Sign in with Google
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Form Container -->
+    <div id="formContainer" class="hidden form-container">
+      <h1 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">
+        Craving Tales
+      </h1>
+    </div>
+    <script type="module" src="script.js"></script>
+  </body>
+</html>

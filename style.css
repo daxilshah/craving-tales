@@ -1,0 +1,55 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f0f4f8;
+}
+
+/* Form container */
+.form-container {
+  max-width: 900px;
+  margin: 4.5rem auto;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 1rem; /* Mobile default */
+  border-radius: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 10;
+}
+@media (min-width: 768px) {
+  .form-container {
+    padding: 2.5rem; /* Desktop */
+  }
+}
+
+#signinPanel button {
+  margin: 0 auto;
+}
+
+/* Sign out section adjustments */
+#signOutSection {
+  flex-direction: row; /* default for desktop */
+  top: 1rem;
+  right: 1rem;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  #signinPanel {
+    margin: 1rem;
+  }
+
+  #signOutSection {
+    position: relative;
+    flex-direction: column; /* stack vertically on mobile */
+    align-items: flex-end;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  /* Push the form container down so it doesn't get overlapped */
+  .form-container {
+    margin: 1rem 0.5rem 0 0.5rem;
+  }
+}
