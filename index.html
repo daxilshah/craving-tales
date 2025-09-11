@@ -5,31 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Craving Tales</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Top-right user info and sign out -->
     <div
       class="fixed top-4 right-4 flex items-center gap-4 z-20 hidden"
       id="signOutSection"
     >
-      <span id="userDetails"></span>
-      <button id="signOutBtn" class="px-4 py-2 bg-black text-white rounded">
-        Sign Out
-      </button>
+      <div class="flex items-center space-x-4">
+        <span id="userDetails" class="text-lg text-black font-medium"></span>
+        <button
+          id="signOutBtn"
+          class="bg-black hover:bg-red-600 text-white px-4 py-2 rounded-md transition-colors"
+        >
+          Sign Out
+        </button>
+      </div>
     </div>
 
-    <!-- Sign in panel -->
     <div id="signinPanel" class="flex justify-center items-center min-h-screen">
-      <div class="signin-box p-6 rounded-lg shadow-lg bg-white text-center">
-        <h1 class="text-2xl font-bold mb-6 text-center">
-          Craving Tales
-        </h1>
-        <p class="mb-4 font-semibold">Please sign in to continue</p>
+      <div class="signin-box p-8 rounded-lg shadow-xl bg-white text-center">
+        <img
+          src="assets/logo_500x500.png"
+          alt="Craving Tales Logo"
+          class="signin-logo mx-auto"
+        />
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Craving Tales</h1>
+        <p class="mb-6 text-gray-600">Please sign in to manage your kitchen</p>
         <button
           id="panelSignInBtn"
-          class="px-6 py-2 bg-black text-white rounded flex items-center justify-center gap-2"
+          class="px-6 py-3 bg-black text-white rounded-lg flex items-center justify-center gap-3 w-full hover:bg-gray-800 transition"
         >
           <svg class="w-5 h-5" viewBox="0 0 533.5 544.3">
             <path
@@ -54,12 +59,22 @@
       </div>
     </div>
 
-    <!-- Main Form Container -->
     <div id="formContainer" class="hidden form-container">
-      <h1 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">
-        Craving Tales
-      </h1>
+      <div class="mb-4 border-b border-gray-200">
+        <div class="flex flex-wrap -mb-px text-sm font-medium text-center flex-tabs-container">
+          <div class="flex-1 brand-name">
+            <h1 class="text-3xl font-bold text-gray-800 text-left"><span class="font-brittany text-5xl">Craving</span> <span class="font-lora">Tales</span></h1>
+          </div>
+          <ul
+          class="flex flex-wrap -mb-px text-sm font-medium text-center"
+          id="main-tabs"
+        ></ul>
+        </div>
+      </div>
+
+      <div id="tabContent"></div>
     </div>
+
     <script type="module" src="script.js"></script>
   </body>
 </html>
