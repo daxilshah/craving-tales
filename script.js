@@ -43,6 +43,7 @@ const signOutSection = document.getElementById("signOutSection");
 const userDetails = document.getElementById("userDetails");
 const mainTabs = document.getElementById("main-tabs");
 const tabContent = document.getElementById("tabContent");
+const ELECTRICITY_COST_PER_HOUR = 24;
 
 let currentUser = null;
 let ingredientsCache = [];
@@ -154,7 +155,7 @@ async function renderDashboard(container) {
       </div>
 
       <div>
-        <h3 class="text-lg font-bold mb-4">Pending Orders List</h3>
+        <h3 class="text-lg font-bold mb-4">Pending/Unpaid Orders List</h3>
         <div id="pending-orders-list" class="space-y-4"></div>
       </div>
       <div>
@@ -177,8 +178,8 @@ async function loadDashboardData() {
     (sum, order) => sum + (order.totalAmount || 0),
     0
   );
-  const pendingOrders = allOrders.filter((order) => !order.isDelivered);
-  const pendingCount = pendingOrders.length;
+  const pendingUnpaidOrders = allOrders.filter((order) => !order.isDelivered || !order.isPaymentReceived);
+  const pendingCount = allOrders.filter((order) => !order.isDelivered).length;
 
   document.getElementById("total-orders-stat").textContent = totalOrders;
   document.getElementById(
@@ -190,30 +191,10 @@ async function loadDashboardData() {
   const pendingListContainer = document.getElementById("pending-orders-list");
   pendingListContainer.innerHTML = "";
 
-  pendingOrders.forEach((order) => {
+  pendingUnpaidOrders.forEach((order) => {
     const orderCard = document.createElement("div");
-    orderCard.className =
-      "bg-white p-4 rounded-lg shadow border cursor-pointer";
-    orderCard.innerHTML = `
-      <h4 class="font-bold">${order.orderBy} - ₹${order.totalAmount.toFixed(
-      2
-    )}</h4>
-      <p class="text-sm text-gray-500">ID: ${order.orderId} | ${new Date(
-      order.orderDate
-    ).toLocaleDateString()}</p>
-    `;
-    orderCard.onclick = () => showOrderDetails(order.id);
-    pendingListContainer.appendChild(orderCard);
-  });
-
-  // Recent Orders List (Top 10)
-  const recentListContainer = document.getElementById("recent-orders-list");
-  recentListContainer.innerHTML = "";
-
-  const recentOrders = allOrders.slice(0, 10);
-  recentOrders.forEach((order) => {
-    const orderCard = document.createElement("div");
-    const statusColor = order.isDelivered ? "text-green-600" : "text-red-600";
+    const deliveryStatusColor = order.isDelivered ? "text-green-600" : "text-red-600";
+    const paymentStatusColor = order.isPaymentReceived ? "text-green-600" : "text-red-600";
     orderCard.className =
       "bg-white p-4 rounded-lg shadow border cursor-pointer";
     orderCard.innerHTML = `
@@ -226,9 +207,49 @@ async function loadDashboardData() {
       order.orderDate
     ).toLocaleDateString()}</p>
         </div>
-        <span class="font-semibold text-sm ${statusColor}">${
-      order.isDelivered ? "Completed" : "Pending"
-    }</span>
+        <div>
+          <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
+            order.isDelivered ? "Delivered" : "Pending"
+          }</span>
+          <span class="font-semibold text-sm ml-4 mr-2 badge ${paymentStatusColor}">${
+            order.isPaymentReceived ? "Paid" : "Not Paid"
+          }</span>
+        </div>
+      </div>
+    `;
+    orderCard.onclick = () => showOrderDetails(order.id);
+    pendingListContainer.appendChild(orderCard);
+  });
+
+  // Recent Orders List (Top 10)
+  const recentListContainer = document.getElementById("recent-orders-list");
+  recentListContainer.innerHTML = "";
+
+  const recentOrders = allOrders.slice(0, 10);
+  recentOrders.forEach((order) => {
+    const orderCard = document.createElement("div");
+    const deliveryStatusColor = order.isDelivered ? "text-green-600" : "text-red-600";
+    const paymentStatusColor = order.isPaymentReceived ? "text-green-600" : "text-red-600";
+    orderCard.className =
+      "bg-white p-4 rounded-lg shadow border cursor-pointer";
+    orderCard.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div>
+          <h4 class="font-bold">${order.orderBy} - ₹${order.totalAmount.toFixed(
+      2
+    )}</h4>
+          <p class="text-sm text-gray-500">ID: ${order.orderId} | ${new Date(
+      order.orderDate
+    ).toLocaleDateString()}</p>
+        </div>
+        <div>
+          <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
+            order.isDelivered ? "Delivered" : "Pending"
+          }</span>
+          <span class="font-semibold text-sm ml-4 mr-2 badge ${paymentStatusColor}">${
+            order.isPaymentReceived ? "Paid" : "Not Paid"
+          }</span>
+        </div>
       </div>
     `;
     orderCard.onclick = () => showOrderDetails(order.id);
@@ -317,6 +338,7 @@ async function loadIngredients() {
   ingredientsCache = await fetchData("ingredients");
   const table = document.getElementById("ingredients-table");
   table.innerHTML = ingredientsCache
+    .sort((a, b) => a.name.localeCompare(b.name))
     .map(
       (ing) => `
         <tr class="border-b">
@@ -354,6 +376,35 @@ async function loadIngredients() {
   );
 }
 
+function calculateAndUpdateCost() {
+  let totalCost = 0;
+
+  const ingredientRows = document.querySelectorAll(
+    "#recipe-ingredients-list .dynamic-list-item"
+  );
+  ingredientRows.forEach((row) => {
+    const ingredientId = row.querySelector(".ingredient-select").value;
+    const consumedQuantity = parseFloat(
+      row.querySelector(".consumed-quantity").value
+    );
+    const ingredient = ingredientsCache.find((i) => i.id === ingredientId);
+
+    if (ingredient && consumedQuantity) {
+      const cost =
+        (consumedQuantity * ingredient.costPrice) / ingredient.quantity;
+      totalCost += cost;
+    }
+  });
+
+  // Update cost field (only auto-update if user hasn’t modified manually)
+  const costInput = document.getElementById("recipe-cost");
+  if (!costInput.dataset.manualOverride) {
+    costInput.value = totalCost.toFixed(2);
+  }
+
+  return totalCost;
+}
+
 // --- MENU MANAGER ---
 async function renderMenuManager(container) {
   container.innerHTML = `
@@ -368,16 +419,16 @@ async function renderMenuManager(container) {
             <select required id="recipe-category" class="p-2 border rounded-md">
             <option value="">Select Category</option>
             ${[
-              "Cake",
               "Brownies",
-              "Cheesecake",
-              "Cookies",
               "Button Cookies",
-              "Savory",
-              "Mukhwas",
-              "Hampers",
+              "Cake",
+              "Cheesecake",
               "Chocolates",
+              "Cookies",
               "Cupcakes",
+              "Hampers",
+              "Mukhwas",
+              "Savory",
               "Other",
             ]
               .map((c) => `<option value="${c}">${c}</option>`)
@@ -397,11 +448,21 @@ async function renderMenuManager(container) {
           <div id="packaging-options-list" class="space-y-2"></div>
           <button type="button" id="add-packaging-option" class="mt-2 text-sm bg-gray-200 px-3 py-1 rounded-md">+ Add Packaging Option</button>
         </div>
+        <div>
+          <label for="recipe-cost" class="font-semibold text-sm mb-1">Recipe Cost (₹)</label>
+          <input type="number" id="recipe-cost" class="p-2 border rounded-md w-full" step="0.01" value="0.00" >
+        </div>
         <button type="submit" class="bg-black text-white px-4 py-2 rounded-md w-full">Save Menu Item</button>
       </form>
     </div>
      <div>
-      <h3 class="text-lg font-bold mb-4">Menu List</h3>
+     <div class="mb-4 flex justify-between">
+          <h3 class="text-lg font-bold w-full">Menu List</h3>
+          <span class="w-full"></span>
+          <select id="category-filter" class="w-full p-2 border rounded-md bg-white">
+            <option value="all">All Categories</option>
+          </select>
+      </div>
       <div id="menu-table" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
     </div>
   `;
@@ -426,6 +487,7 @@ async function renderMenuManager(container) {
     <select required class="ingredient-select w-full p-2 border rounded-md bg-white">
       <option value="">Select Ingredient</option>
       ${ingredientsCache
+        .sort((a, b) => a.name.localeCompare(b.name))
         .map(
           (i) =>
             `<option value="${i.id}" ${item.id === i.id ? "selected" : ""}>${
@@ -457,6 +519,7 @@ async function renderMenuManager(container) {
       } else {
         costDisplay.textContent = "";
       }
+      calculateAndUpdateCost();
     };
 
     // Add event listeners
@@ -501,8 +564,6 @@ async function renderMenuManager(container) {
   form.onsubmit = async (e) => {
     e.preventDefault();
 
-    // Calculate cost
-    let totalCost = 0;
     const ingredientsForRecipe = [];
     const ingredientRows =
       ingredientsListDiv.querySelectorAll(".dynamic-list-item");
@@ -518,10 +579,6 @@ async function renderMenuManager(container) {
 
       if (!masterIngredient || !consumedQuantity) continue;
 
-      const ingredientCost =
-        (consumedQuantity * masterIngredient.costPrice) /
-        masterIngredient.quantity;
-      totalCost += ingredientCost;
       ingredientsForRecipe.push({
         id: ingredientId,
         name: masterIngredient.name,
@@ -546,7 +603,7 @@ async function renderMenuManager(container) {
       bakedQuantity: parseInt(form.querySelector("#baked-quantity").value),
       ingredients: ingredientsForRecipe,
       packagingOptions: packagingOptions,
-      cost: parseFloat(totalCost.toFixed(2)),
+      cost: parseFloat(document.getElementById("recipe-cost").value) || 0,
     };
 
     const docId = id || doc(getCollectionRef("menu")).id;
@@ -555,10 +612,19 @@ async function renderMenuManager(container) {
     form.reset();
     ingredientsListDiv.innerHTML = "";
     packagingListDiv.innerHTML = "";
+    document.getElementById("menu-id").value = "";
     await loadMenu();
   };
 
   await loadMenu();
+
+  // Event listener for category filter
+  const categoryFilter = document.getElementById("category-filter");
+  if (categoryFilter) {
+    categoryFilter.onchange = (e) => {
+      filterAndRenderMenuCards(e.target.value);
+    };
+  }
 }
 
 function showMenuDetails(item) {
@@ -595,49 +661,110 @@ function showMenuDetails(item) {
   document.body.appendChild(modal);
 }
 
-async function loadMenu() {
-  function renderMenuCard(item) {
-    const costPerUnit =
-      item.bakedQuantity > 0 ? (item.cost / item.bakedQuantity).toFixed(2) : 0;
-    const cardDiv = document.createElement("div");
-    cardDiv.className = "bg-white p-4 rounded-lg shadow border cursor-pointer";
-    cardDiv.innerHTML = `
-            <h4 class="font-bold text-lg">${item.name}</h4>
-            <p class="text-sm text-gray-500">${item.category}</p>
-            <div class="font-semibold text-xl">
-                <p>Cost per Unit: ₹${costPerUnit}</p>
-            </div>
-            <div class="font-semibold text-l my-2">
-                <p>Recipe Cost: ₹${item.cost.toFixed(2)}</p>
-            </div>
-            <div class="text-xs">
-                <p><strong>Capacity:</strong> ${item.maxCapacity} pcs/batch</p>
-                <p><strong>Baking Time:</strong> ${item.bakingDuration} mins</p>
-                <p><strong>Baked Quantity:</strong> ${item.bakedQuantity}</p>
-            </div>
-            <div class="mt-4">
-                <button class="edit-menu mr-3" data-id="${
-                  item.id
-                }">Edit</button>
-                <button class="delete-menu text-red-600" data-id="${
-                  item.id
-                }">Delete</button>
-            </div>
-        `;
-    cardDiv.onclick = (e) => {
-      // Prevent click event from bubbling up to the card div if edit/delete buttons are clicked
-      if (e.target.tagName === "BUTTON") return;
-      showMenuDetails(item);
-    };
-    return cardDiv;
-  }
+function renderMenuCard(item) {
+  const totalBatches =
+    item.maxCapacity > 0 ? Math.ceil(item.bakedQuantity / item.maxCapacity) : 0;
+  const totalDuration = totalBatches * item.bakingDuration;
+  const itemElectricityCost = (totalDuration * ELECTRICITY_COST_PER_HOUR) / 60;
+  const totalRecipeCost = item.cost + itemElectricityCost;
 
+  const costPerUnit =
+    item.bakedQuantity > 0
+      ? (totalRecipeCost / item.bakedQuantity).toFixed(2)
+      : 0;
+  const cardDiv = document.createElement("div");
+  cardDiv.className = "bg-white p-4 rounded-lg shadow border cursor-pointer";
+  cardDiv.innerHTML = `
+          <h4 class="font-bold text-lg active-color">${item.name}</h4>
+          <p class="text-sm text-gray-500">${item.category}</p>
+          <div class="text-sm">
+              <p><strong>Capacity:</strong> ${item.maxCapacity} pcs/batch</p>
+              <p><strong>Baking Time:</strong> ${item.bakingDuration} mins</p>
+              <p><strong>Baked Quantity:</strong> ${item.bakedQuantity}</p>
+          </div>
+          <div class="text-l mt-2">
+              <p class="flex justify-between"><strong>Cost per Unit: </strong>₹${costPerUnit}</p>
+          </div>
+          <div class="text-sm my-2">
+              <p class="flex justify-between"><strong>Recipe Cost: </strong>₹${totalRecipeCost.toFixed(
+                2
+              )}</p>
+              <p class="text-xs text-gray-500 font-normal">(Making: ₹${item.cost.toFixed(
+                2
+              )} + Electricity: ₹${itemElectricityCost.toFixed(2)})</p>
+          </div>
+          <h5 class="text-l mt-2 mb-1"><strong>MRP Costs:</strong></h5>
+          <ul class="text-sm list-disc list-inside space-y-1">
+            ${item.packagingOptions
+              .map(
+                (pack) =>
+                  `<li class="flex justify-between"><strong>Pack of ${
+                    pack.value
+                  }: </strong>₹${pack.mrp.toFixed(2)}</li>`
+              )
+              .join("")}
+          </ul>
+          <div class="mt-4 font-normal">
+              <button class="duplicate-menu mr-3" data-id="${
+                item.id
+              }">Duplicate</button>
+              <button class="edit-menu text-blue-600 mr-3" data-id="${
+                item.id
+              }">Edit</button>
+              <button class="delete-menu text-red-600" data-id="${
+                item.id
+              }">Delete</button>
+          </div>
+      `;
+  cardDiv.onclick = (e) => {
+    // Prevent click event from bubbling up to the card div if edit/delete buttons are clicked
+    if (e.target.tagName === "BUTTON") return;
+    showMenuDetails(item);
+  };
+  return cardDiv;
+}
+
+async function loadMenu() {
   menuCache = await fetchData("menu");
-  const table = document.getElementById("menu-table");
-  table.innerHTML = ""; // Clear the container
-  menuCache.forEach((item) => {
-    table.appendChild(renderMenuCard(item));
+  const categories = [
+    ...new Set(menuCache.map((item) => item.category)),
+  ].sort();
+  const categoryFilter = document.getElementById("category-filter");
+  categoryFilter.innerHTML =
+    `<option value="all">All Categories</option>` +
+    categories.map((c) => `<option value="${c}">${c}</option>`).join("");
+
+  filterAndRenderMenuCards("all");
+}
+
+async function filterAndRenderMenuCards(category) {
+  const filteredMenu = (
+    category === "all"
+      ? menuCache
+      : menuCache.filter((item) => item.category === category)
+  ).sort((a, b) => a.name.localeCompare(b.name));
+  const menuTableContainer = document.getElementById("menu-table");
+  menuTableContainer.innerHTML = ""; // Clear existing content
+  filteredMenu.forEach((item) => {
+    menuTableContainer.appendChild(renderMenuCard(item));
   });
+
+  // Re-attach event listeners for the newly rendered cards
+  document.querySelectorAll(".duplicate-menu").forEach(
+    (btn) =>
+      (btn.onclick = async () => {
+        const itemToDuplicate = menuCache.find((i) => i.id === btn.dataset.id);
+        if (!itemToDuplicate) return;
+        const duplicatedItem = {
+          ...itemToDuplicate,
+          name: `${itemToDuplicate.name} (Copy)`,
+        };
+        delete duplicatedItem.id;
+        const newId = doc(getCollectionRef("menu")).id;
+        await setDoc(getDocRef("menu", newId), duplicatedItem);
+        await loadMenu();
+      })
+  );
 
   document.querySelectorAll(".delete-menu").forEach(
     (btn) =>
@@ -659,6 +786,7 @@ async function loadMenu() {
         document.getElementById("recipe-capacity").value = item.maxCapacity;
         document.getElementById("recipe-duration").value = item.bakingDuration;
         document.getElementById("baked-quantity").value = item.bakedQuantity;
+        document.getElementById("recipe-cost").value = item.cost;
 
         const ingredientsListDiv = document.getElementById(
           "recipe-ingredients-list"
@@ -696,9 +824,10 @@ async function loadMenu() {
         if (item.packagingOptions) {
           item.packagingOptions.forEach((pack) => {
             const div = document.createElement("div");
-            div.className = "dynamic-list-item flex gap-2 items-center";
+            div.className =
+              "dynamic-list-item flex flex-col md:flex-row gap-2 items-center relative";
             div.innerHTML = `
-              <select class="package-value p-2 border rounded-md">
+              <select class="package-value w-full md:flex-grow p-2 border rounded-md">
                 ${[...Array(12).keys()]
                   .map(
                     (i) =>
@@ -711,7 +840,7 @@ async function loadMenu() {
               <input required class="package-mrp p-2 border rounded-md" type="number" placeholder="MRP" value="${
                 pack.mrp || ""
               }">
-              <button type="button" class="remove-packaging-btn text-red-500 font-bold">X</button>
+              <button type="button" class="remove-packaging-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
             `;
             packagingListDiv.appendChild(div);
             div.querySelector(".remove-packaging-btn").onclick = () =>
@@ -731,6 +860,7 @@ async function renderOrderManager(container) {
       <form id="order-form" class="space-y-4">
         <input type="hidden" id="order-id">
         <input required class="p-2 border rounded-md w-full" type="text" id="order-by" placeholder="Order By (Customer Name)">
+        <textarea class="p-2 border rounded-md w-full" id="order-note" placeholder="Add Note"></textarea>
         <div>
           <h4 class="font-semibold mb-2">Menu Items</h4>
           <div id="order-items-list" class="space-y-2"></div>
@@ -749,6 +879,13 @@ async function renderOrderManager(container) {
 
   const orderItemsListDiv = container.querySelector("#order-items-list");
   const addOrderItemBtn = container.querySelector("#add-order-item");
+  const orderDiscountInput = document.createElement("input");
+  orderDiscountInput.type = "number";
+  orderDiscountInput.id = "order-discount";
+  orderDiscountInput.min = "0";
+  orderDiscountInput.className = "p-2 border rounded-md w-full mt-3";
+  orderDiscountInput.placeholder = "Discount (in Rs.)";
+  addOrderItemBtn.insertAdjacentElement("afterend", orderDiscountInput);
 
   const addOrderItemField = () => {
     const div = document.createElement("div");
@@ -761,11 +898,12 @@ async function renderOrderManager(container) {
           .map((i) => `<option value="${i.id}">${i.name}</option>`)
           .join("")}
       </select>
+      <span class="item-price-display text-sm font-semibold text-gray-700 w-full md:w-auto"></span>
       <select required class="item-packaging-select w-full p-2 border rounded-md bg-white">
         <option value="">Select Packaging</option>
       </select>
       <input required class="item-quantity w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Quantity">
-      <span class="item-price-display text-sm font-semibold text-gray-700 w-full md:w-auto"></span>
+      <input required class="item-packaging-cost w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Packaging Cost">
       <button type="button" class="remove-order-item-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
     `;
     orderItemsListDiv.appendChild(div);
@@ -774,6 +912,7 @@ async function renderOrderManager(container) {
     const menuItemSelect = div.querySelector(".menu-item-select");
     const packagingSelect = div.querySelector(".item-packaging-select");
     const inputQuantity = div.querySelector(".item-quantity");
+    const packagingCostInput = div.querySelector(".item-packaging-cost");
     const priceDisplay = div.querySelector(".item-price-display");
 
     const updatePrice = () => {
@@ -809,6 +948,7 @@ async function renderOrderManager(container) {
     };
 
     packagingSelect.onchange = updatePrice;
+    packagingCostInput.oninput = updatePrice;
     inputQuantity.oninput = updatePrice;
   };
 
@@ -816,8 +956,10 @@ async function renderOrderManager(container) {
 
   container.querySelector("#order-form").onsubmit = async (e) => {
     e.preventDefault();
-    const ELECTRICITY_COST_PER_HOUR = 24;
-    let totalOrderAmount = 0;
+    let totalMRP = 0;
+    let totalMakingCost = 0;
+    let totalElectricityCost = 0;
+    let totalPackagingCost = 0;
     const itemsForOrder = [];
 
     const itemRows = orderItemsListDiv.querySelectorAll(".dynamic-list-item");
@@ -830,22 +972,43 @@ async function renderOrderManager(container) {
         row.querySelector(".item-packaging-select").value
       );
       const masterMenuItem = menuCache.find((i) => i.id === menuItemId);
+      const packagingCost = parseFloat(
+        row.querySelector(".item-packaging-cost").value
+      );
 
       if (!masterMenuItem || !orderedQuantity || !packagingValue) continue;
 
       const selectedPackage = masterMenuItem.packagingOptions.find(
         (p) => p.value === packagingValue
       );
-      const totalMRP = selectedPackage.mrp * orderedQuantity;
+      const itemMRP = selectedPackage.mrp * orderedQuantity;
+      totalMRP += itemMRP;
 
-      totalOrderAmount += totalMRP;
+      const totalCookies = orderedQuantity * packagingValue;
+      const totalBatches = Math.ceil(totalCookies / masterMenuItem.maxCapacity);
+      const totalDuration = totalBatches * masterMenuItem.bakingDuration;
+      const itemMakingCost =
+        (masterMenuItem.cost / masterMenuItem.bakedQuantity) * totalCookies;
+      const itemElectricityCost =
+        (totalDuration * ELECTRICITY_COST_PER_HOUR) / 60;
+      const itemPackagingCost = packagingCost * orderedQuantity;
+
+      totalMakingCost += itemMakingCost;
+      totalElectricityCost += itemElectricityCost;
+      totalPackagingCost += itemPackagingCost;
       itemsForOrder.push({
         id: menuItemId,
         name: masterMenuItem.name,
         quantity: orderedQuantity,
         packagingValue: packagingValue,
+        makingCost: itemMakingCost,
+        electricityCost: itemElectricityCost,
+        packagingCost: itemPackagingCost,
       });
     }
+
+    const discount = parseFloat(orderDiscountInput.value) || 0;
+    const totalAmount = totalMRP - discount;
 
     const id = doc(getCollectionRef("orders")).id;
     const data = {
@@ -853,8 +1016,15 @@ async function renderOrderManager(container) {
       orderBy: document.getElementById("order-by").value,
       orderDate: new Date().toISOString(),
       isDelivered: false,
+      isPaymentReceived: false,
+      note: document.getElementById("order-note").value,
       items: itemsForOrder,
-      totalAmount: parseFloat(totalOrderAmount.toFixed(2)),
+      totalMRP: parseFloat(totalMRP.toFixed(2)),
+      discount: parseFloat(discount.toFixed(2)),
+      totalAmount: parseFloat(totalAmount.toFixed(2)),
+      totalMakingCost: parseFloat(totalMakingCost.toFixed(2)),
+      totalElectricityCost: parseFloat(totalElectricityCost.toFixed(2)),
+      totalPackagingCost: parseFloat(totalPackagingCost.toFixed(2)),
     };
 
     await setDoc(getDocRef("orders", id), data);
@@ -876,8 +1046,10 @@ async function loadOrders() {
     .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
     .forEach((order) => {
       const orderCard = document.createElement("div");
-      const statusText = order.isDelivered ? "Completed" : "Pending";
-      const statusColor = order.isDelivered ? "text-green-600" : "text-red-600";
+      const deliveryStatusText = order.isDelivered ? "Delivered" : "Pending";
+      const deliveryStatusColor = order.isDelivered ? "text-green-600" : "text-red-600";
+      const paymentStatusText = order.isPaymentReceived ? "Paid" : "Not Paid";
+      const paymentStatusColor = order.isPaymentReceived ? "text-green-600" : "text-red-600";
 
       orderCard.className =
         "bg-white p-4 rounded-lg shadow border cursor-pointer";
@@ -888,7 +1060,10 @@ async function loadOrders() {
                     <p class="text-xs text-gray-500">ID: ${
                       order.orderId
                     } | ${new Date(order.orderDate).toLocaleDateString()}</p>
-                    <span class="font-semibold text-sm ${statusColor}">${statusText}</span>
+                     <div class="my-1">
+                      <span class="font-semibold text-sm badge ${deliveryStatusColor}">${deliveryStatusText}</span>
+                      <span class="font-semibold text-sm badge ${paymentStatusColor}">${paymentStatusText}</span>
+                     </div>
                 </div>
                 <div class="text-right">
                     <p class="font-bold text-xl">₹${order.totalAmount.toFixed(
@@ -933,39 +1108,33 @@ function showOrderDetails(orderId) {
   const order = orders.find((o) => o.id === orderId);
   if (!order) return;
 
-  let totalMakingCost = 0;
   const itemsHtml = order.items
     .map((item) => {
-      const menuItem = menuCache.find((m) => m.id === item.id);
-      if (!menuItem) return "";
-
-      // Calculate Making Cost for this item
-      const totalCookies = item.quantity * item.packagingValue;
-      const totalBatches = Math.ceil(totalCookies / menuItem.maxCapacity);
-      const totalDuration = totalBatches * menuItem.bakingDuration;
-      const electricityCost = (totalDuration * 24) / 60; // 24 is assumed price per hour
-      const makingCost =
-        (menuItem.cost * totalCookies) / menuItem.bakedQuantity +
-        electricityCost;
-
-      totalMakingCost += makingCost;
-
-      const selectedPackage = menuItem.packagingOptions.find(
-        (p) => p.value === item.packagingValue
-      );
-      const itemMRP = selectedPackage ? selectedPackage.mrp : 0;
-
       return `
             <li class="bg-gray-100 p-2 rounded">
                 <span>${item.quantity} x ${item.name} (Pack of ${
         item.packagingValue
-      })</span>
-                <span class="font-semibold block">MRP: ₹${(
-                  item.quantity * itemMRP
-                ).toFixed(2)}</span>
-                <span class="text-sm">Making Cost: ₹${makingCost.toFixed(
-                  2
-                )}</span>
+      })</span><br/>
+                <p class="text-sm text-gray-500 flex justify-between">
+                    Making Cost: <span> ₹${item.makingCost.toFixed(2)}</span>
+                </p>
+                <p class="text-sm text-gray-500 flex justify-between">
+                    Electricity Cost: <span>+ ₹${item.electricityCost.toFixed(
+                      2
+                    )}</span>
+                </p>
+                <p class="text-sm text-gray-500 flex justify-between">
+                    Packaging Cost: <span>+ ₹${item.packagingCost.toFixed(
+                      2
+                    )}</span>
+                </p>
+                <p class="flex justify-between font-semibold block">
+                    Cost Price: <span> ₹${(
+                      item.makingCost +
+                      item.electricityCost +
+                      item.packagingCost
+                    ).toFixed(2)}</span>
+                </p>
             </li>
         `;
     })
@@ -976,34 +1145,56 @@ function showOrderDetails(orderId) {
     "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50";
 
   const deliveredText = order.isDelivered ? "Delivered" : "Pending";
+  const paymentReceivedText = order.isPaymentReceived ? "Paid" : "Not Paid";
 
   modal.innerHTML = `
     <div class="relative bg-white p-6 rounded-lg shadow-xl max-w-lg w-full">
         <h2 class="text-2xl font-bold mb-4">Order Details for ${
           order.orderBy
         }</h2>
+        ${
+          order.note
+            ? `<p class="text-sm italic mb-2">Note: ${order.note}</p>`
+            : ""
+        }
         <p class="text-sm text-gray-500 mb-4">ID: ${order.orderId}</p>
-        <p class="font-bold">Status: <span class="text-${
+        <p class="font-bold">Delivery Status: <span class="text-${
           order.isDelivered ? "green" : "red"
         }-600">${deliveredText}</span></p>
-        <div class="mt-4">
-            <label class="inline-flex items-center">
-                <input type="checkbox" class="form-checkbox" id="delivered-checkbox" ${
-                  order.isDelivered ? "checked" : ""
-                }>
-                <span class="ml-2">Mark as Delivered</span>
-            </label>
+        <p class="font-bold">Payment Status: <span class="text-${
+          order.isPaymentReceived ? "green" : "red"
+        }-600">${paymentReceivedText}</span></p>
+        <div class="flex">
+          <div class="mt-1">
+              <label class="inline-flex items-center">
+                  <input type="checkbox" class="form-checkbox" id="delivered-checkbox" ${
+                    order.isDelivered ? "checked" : ""
+                  }>
+                  <span class="ml-2">Mark as Delivered</span>
+              </label>
+          </div>
+          <div class="mt-1 ml-4">
+              <label class="inline-flex items-center">
+                  <input type="checkbox" class="form-checkbox" id="order-payment-received" ${
+                    order.isPaymentReceived ? "checked" : ""
+                  }>
+                  <span class="ml-2">Payment Received</span>
+              </label>
+          </div>
         </div>
         <ul class="space-y-2 mt-4">
             ${itemsHtml}
         </ul>
         <div class="mt-4 pt-4 border-t border-gray-200">
-            <p class="font-bold text-lg flex justify-between">Total MRP: <span>₹${order.totalAmount.toFixed(
+            <p class="font-bold text-lg flex justify-between">Total MRP: <span>₹${order.totalMRP.toFixed(
               2
             )}</span></p>
-            <p class="text-sm text-gray-500 flex justify-between">Total Making Cost: <span>₹${totalMakingCost.toFixed(
-              2
-            )}</span></p>
+            <p class="text-sm text-gray-500 flex justify-between">Discount: <span>- ₹${(
+              order.discount || 0
+            ).toFixed(2)}</span></p>
+            <p class="font-bold text-lg flex justify-between">Total Order Value: <span>₹${(
+              order.totalAmount || 0
+            ).toFixed(2)}</span></p>
         </div>
         <button class="mt-6 w-full bg-black text-white px-4 py-2 rounded-md" onclick="document.body.removeChild(this.closest('.fixed'));">Close</button>
     </div>
@@ -1018,9 +1209,22 @@ function showOrderDetails(orderId) {
       { isDelivered: e.target.checked },
       { merge: true }
     );
-    // The modal content might need a refresh or the user can close and re-open to see the change.
-    await loadOrders(); // This line is the fix
+
+    await loadOrders();
     await loadDashboardData();
-    document.body.removeChild(modal); // Close the modal to see the updated list
+    document.body.removeChild(modal); 
+  };
+
+  const paymentCheckbox = modal.querySelector("#order-payment-received");
+  paymentCheckbox.onchange = async (e) => {
+    await setDoc(
+      getDocRef("orders", orderId),
+      { isPaymentReceived: e.target.checked },
+      { merge: true }
+    );
+
+    await loadOrders();
+    await loadDashboardData();
+    document.body.removeChild(modal); 
   };
 }
