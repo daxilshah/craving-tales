@@ -1076,7 +1076,9 @@ async function loadOrders() {
             </div>
             <ul class="text-sm mt-3 list-disc list-inside bg-gray-50 p-2 rounded">
                 ${order.items
-                  .map((item) => `<li>${item.quantity} x ${item.name}</li>`)
+                  .map((item) => `<li class="mb-1">${item.quantity} x ${item.name} (Pack of ${
+                  item.packagingValue
+                })</li>`)
                   .join("")}
             </ul>
         `;
@@ -1113,8 +1115,8 @@ function showOrderDetails(orderId) {
       return `
             <li class="bg-gray-100 p-2 rounded">
                 <span>${item.quantity} x ${item.name} (Pack of ${
-        item.packagingValue
-      })</span><br/>
+                  item.packagingValue
+                })</span><br/>
                 <p class="text-sm text-gray-500 flex justify-between">
                     Making Cost: <span> ₹${item.makingCost.toFixed(2)}</span>
                 </p>
