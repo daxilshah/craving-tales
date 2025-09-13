@@ -207,7 +207,7 @@ async function loadDashboardData() {
       order.orderDate
     ).toLocaleDateString()}</p>
         </div>
-        <div>
+        <div class="flex flex-col text-nowrap gap-1 text-center">
           <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
             order.isDelivered ? "Delivered" : "Pending"
           }</span>
@@ -242,7 +242,7 @@ async function loadDashboardData() {
       order.orderDate
     ).toLocaleDateString()}</p>
         </div>
-        <div>
+        <div class="flex flex-col text-nowrap gap-1 text-center">
           <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
             order.isDelivered ? "Delivered" : "Pending"
           }</span>
@@ -898,11 +898,11 @@ async function renderOrderManager(container) {
           .map((i) => `<option value="${i.id}">${i.name}</option>`)
           .join("")}
       </select>
-      <span class="item-price-display text-sm font-semibold text-gray-700 w-full md:w-auto"></span>
       <select required class="item-packaging-select w-full p-2 border rounded-md bg-white">
-        <option value="">Select Packaging</option>
+      <option value="">Select Packaging</option>
       </select>
       <input required class="item-quantity w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Quantity">
+      <span class="item-price-display text-sm font-semibold text-gray-700 w-full md:w-auto"></span>
       <input required class="item-packaging-cost w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Packaging Cost">
       <button type="button" class="remove-order-item-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
     `;
@@ -1060,8 +1060,8 @@ async function loadOrders() {
                     <p class="text-xs text-gray-500">ID: ${
                       order.orderId
                     } | ${new Date(order.orderDate).toLocaleDateString()}</p>
-                     <div class="my-1">
-                      <span class="font-semibold text-sm badge ${deliveryStatusColor}">${deliveryStatusText}</span>
+                     <div class="my-1 flex text-nowrap">
+                      <span class="font-semibold text-sm mr-1 badge ${deliveryStatusColor}">${deliveryStatusText}</span>
                       <span class="font-semibold text-sm badge ${paymentStatusColor}">${paymentStatusText}</span>
                      </div>
                 </div>
