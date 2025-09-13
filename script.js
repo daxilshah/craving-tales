@@ -126,9 +126,9 @@ function showTab(tabName) {
 
 // --- DATA HELPERS ---
 const getCollectionRef = (collectionName) =>
-  collection(db, `users/${currentUser.uid}/${collectionName}`);
+  collection(db, collectionName);
 const getDocRef = (collectionName, id) =>
-  doc(db, `users/${currentUser.uid}/${collectionName}`, id);
+  doc(db, collectionName, id);
 
 async function fetchData(collectionName) {
   const querySnapshot = await getDocs(getCollectionRef(collectionName));
@@ -452,7 +452,10 @@ async function renderMenuManager(container) {
           <label for="recipe-cost" class="font-semibold text-sm mb-1">Recipe Cost (₹)</label>
           <input type="number" id="recipe-cost" class="p-2 border rounded-md w-full" step="0.01" value="0.00" >
         </div>
-        <button type="submit" class="bg-black text-white px-4 py-2 rounded-md w-full">Save Menu Item</button>
+        <div class="flex">
+          <button type="submit" class="bg-black text-white px-4 py-2 rounded-md w-full">Save Menu Item</button>
+          <button type="button" id="cancelMenuBtn" class="bg-gray-200 ml-2 px-4 py-2 rounded-md">Cancel</button>
+        </div>
       </form>
     </div>
      <div>
@@ -473,9 +476,17 @@ async function renderMenuManager(container) {
     "#recipe-ingredients-list"
   );
   const addIngredientBtn = container.querySelector("#add-recipe-ingredient");
-
   const packagingListDiv = container.querySelector("#packaging-options-list");
   const addPackagingBtn = container.querySelector("#add-packaging-option");
+  const cancelMenuBtn = container.querySelector("#cancelMenuBtn");
+  const form = container.querySelector("#menu-form");
+  cancelMenuBtn.onclick = async () => {
+    form.reset();
+    ingredientsListDiv.innerHTML = "";
+    packagingListDiv.innerHTML = "";
+    document.getElementById("menu-id").value = "";
+    await loadMenu();
+  }
 
   // Inside renderMenuManager(container)
   const addIngredientField = (item = {}) => {
@@ -562,8 +573,6 @@ async function renderMenuManager(container) {
 
   addIngredientBtn.onclick = () => addIngredientField();
   addPackagingBtn.onclick = () => addPackagingField();
-
-  const form = container.querySelector("#menu-form");
   form.onsubmit = async (e) => {
     e.preventDefault();
 
@@ -757,16 +766,18 @@ async function filterAndRenderMenuCards(category) {
   document.querySelectorAll(".duplicate-menu").forEach(
     (btn) =>
       (btn.onclick = async () => {
-        const itemToDuplicate = menuCache.find((i) => i.id === btn.dataset.id);
-        if (!itemToDuplicate) return;
-        const duplicatedItem = {
-          ...itemToDuplicate,
-          name: `${itemToDuplicate.name} (Copy)`,
-        };
-        delete duplicatedItem.id;
-        const newId = doc(getCollectionRef("menu")).id;
-        await setDoc(getDocRef("menu", newId), duplicatedItem);
-        await loadMenu();
+        if (confirm("Are you sure?")) {
+          const itemToDuplicate = menuCache.find((i) => i.id === btn.dataset.id);
+          if (!itemToDuplicate) return;
+          const duplicatedItem = {
+            ...itemToDuplicate,
+            name: `${itemToDuplicate.name} (Copy)`,
+          };
+          delete duplicatedItem.id;
+          const newId = doc(getCollectionRef("menu")).id;
+          await setDoc(getDocRef("menu", newId), duplicatedItem);
+          await loadMenu();
+        }
       })
   );
 
