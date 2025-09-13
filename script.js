@@ -59,7 +59,7 @@ auth.onAuthStateChanged((user) => {
     currentUser = user;
     signinPanel.classList.add("hidden");
     formContainer.classList.remove("hidden");
-    userDetails.textContent = `Welcome, ${user.displayName || user.email}`;
+    userDetails.textContent = `Hi, ${user.displayName || user.email}`;
     signOutSection.classList.remove("hidden");
     initializeAppUI();
   } else {
