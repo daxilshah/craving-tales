@@ -551,6 +551,9 @@ async function renderMenuManager(container) {
       <input required class="package-mrp w-full md:w-32 p-2 border rounded-md" type="number" placeholder="MRP" value="${
         pack.mrp || ""
       }">
+      <input required class="package-packaging-cost w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Packaging Cost" value="${
+        pack.packagingCost || ""
+      }">
       <button type="button" class="remove-packaging-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
     `;
     packagingListDiv.appendChild(div);
@@ -592,6 +595,7 @@ async function renderMenuManager(container) {
     ).map((item) => ({
       value: parseInt(item.querySelector(".package-value").value),
       mrp: parseFloat(item.querySelector(".package-mrp").value),
+      packagingCost: parseFloat(item.querySelector(".package-packaging-cost").value),
     }));
 
     const id = form.querySelector("#menu-id").value;
@@ -840,6 +844,9 @@ async function filterAndRenderMenuCards(category) {
               <input required class="package-mrp p-2 border rounded-md" type="number" placeholder="MRP" value="${
                 pack.mrp || ""
               }">
+              <input required class="package-packaging-cost p-2 border rounded-md" type="number" placeholder="Packaging Cost" value="${
+                pack.packagingCost || ""
+              }">
               <button type="button" class="remove-packaging-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
             `;
             packagingListDiv.appendChild(div);
@@ -903,7 +910,6 @@ async function renderOrderManager(container) {
       </select>
       <input required class="item-quantity w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Quantity">
       <span class="item-price-display text-sm font-semibold text-gray-700 w-full md:w-auto"></span>
-      <input required class="item-packaging-cost w-full md:w-32 p-2 border rounded-md" type="number" placeholder="Packaging Cost">
       <button type="button" class="remove-order-item-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
     `;
     orderItemsListDiv.appendChild(div);
@@ -948,7 +954,6 @@ async function renderOrderManager(container) {
     };
 
     packagingSelect.onchange = updatePrice;
-    packagingCostInput.oninput = updatePrice;
     inputQuantity.oninput = updatePrice;
   };
 
@@ -972,9 +977,6 @@ async function renderOrderManager(container) {
         row.querySelector(".item-packaging-select").value
       );
       const masterMenuItem = menuCache.find((i) => i.id === menuItemId);
-      const packagingCost = parseFloat(
-        row.querySelector(".item-packaging-cost").value
-      );
 
       if (!masterMenuItem || !orderedQuantity || !packagingValue) continue;
 
@@ -991,7 +993,8 @@ async function renderOrderManager(container) {
         (masterMenuItem.cost / masterMenuItem.bakedQuantity) * totalCookies;
       const itemElectricityCost =
         (totalDuration * ELECTRICITY_COST_PER_HOUR) / 60;
-      const itemPackagingCost = packagingCost * orderedQuantity;
+
+      const itemPackagingCost = (selectedPackage.packagingCost ?? 0) * orderedQuantity;
 
       totalMakingCost += itemMakingCost;
       totalElectricityCost += itemElectricityCost;
@@ -1151,15 +1154,15 @@ function showOrderDetails(orderId) {
 
   modal.innerHTML = `
     <div class="relative bg-white p-6 rounded-lg shadow-xl max-w-lg w-full">
-        <h2 class="text-2xl font-bold mb-4">Order Details for ${
+        <h2 class="text-2xl font-bold mb-1">Order Details for ${
           order.orderBy
         }</h2>
+        <p class="text-sm text-gray-500 mb-1">ID: ${order.orderId}</p>
         ${
           order.note
             ? `<p class="text-sm italic mb-2">Note: ${order.note}</p>`
             : ""
         }
-        <p class="text-sm text-gray-500 mb-4">ID: ${order.orderId}</p>
         <p class="font-bold">Delivery Status: <span class="text-${
           order.isDelivered ? "green" : "red"
         }-600">${deliveredText}</span></p>
