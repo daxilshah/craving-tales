@@ -139,18 +139,22 @@ async function fetchData(collectionName) {
 async function renderDashboard(container) {
   container.innerHTML = `
     <div class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-white p-6 rounded-lg shadow-md text-center">
-          <h4 class="text-xl font-semibold text-gray-500">Total Orders</h4>
-          <p id="total-orders-stat" class="text-4xl font-bold mt-2">0</p>
+          <h5 class="text-l font-semibold text-gray-500">Total Revenue</h5>
+          <p id="total-revenue-stat" class="text-3xl font-bold mt-2">₹0</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md text-center">
-          <h4 class="text-xl font-semibold text-gray-500">Total Revenue</h4>
-          <p id="total-revenue-stat" class="text-4xl font-bold mt-2">₹0</p>
+          <h5 class="text-l font-semibold text-gray-500">Total Receivables</h5>
+          <p id="total-receivables-stat" class="text-3xl font-bold mt-2">₹0</p>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-md text-center">
-          <h4 class="text-xl font-semibold text-gray-500">Pending Orders</h4>
-          <p id="pending-orders-stat" class="text-4xl font-bold mt-2">0</p>
+          <h5 class="text-l font-semibold text-gray-500">Total Orders</h5>
+          <p id="total-orders-stat" class="text-3xl font-bold mt-2">0</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md text-center">
+          <h5 class="text-l font-semibold text-gray-500">Pending Orders</h5>
+          <p id="pending-orders-stat" class="text-3xl font-bold mt-2">0</p>
         </div>
       </div>
 
@@ -179,12 +183,17 @@ async function loadDashboardData() {
     0
   );
   const pendingUnpaidOrders = allOrders.filter((order) => !order.isDelivered || !order.isPaymentReceived);
+  const totalReceivables = allOrders.filter((order) => !order.isPaymentReceived).reduce(
+    (sum, order) => sum + (order.totalAmount || 0),
+    0
+  );
   const pendingCount = allOrders.filter((order) => !order.isDelivered).length;
 
   document.getElementById("total-orders-stat").textContent = totalOrders;
   document.getElementById(
     "total-revenue-stat"
   ).textContent = `₹${totalRevenue.toFixed(2)}`;
+  document.getElementById("total-receivables-stat").textContent = `₹${totalReceivables.toFixed(2)}`;;
   document.getElementById("pending-orders-stat").textContent = pendingCount;
 
   // Pending Orders List
