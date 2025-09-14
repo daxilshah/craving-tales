@@ -10,7 +10,7 @@ body {
 }
 
 .font-brittany {
-  font-family: 'Brittany Signature', sans-serif;
+  font-family: "Brittany Signature", sans-serif;
 }
 
 .font-lora {
@@ -147,7 +147,6 @@ select {
   display: flex;
 }
 
-
 @media (max-width: 640px) {
   #signinPanel {
     margin: 1rem;
@@ -193,4 +192,97 @@ select {
   background-color: #f0eeee;
   padding: 0.25rem 0.75rem;
   border-radius: 360px;
+}
+
+/* Mobile scrollbar fixes for order details modal */
+
+/* Custom scrollbar styling for webkit browsers (iOS Safari, Chrome) */
+.modal-content {
+  /* Enable momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  /* Ensure scrollable content has visible scrollbars */
+  overflow-y: auto;
+}
+
+/* Custom scrollbar for webkit browsers */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Fallback for Firefox and other browsers */
+.modal-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 640px) {
+  /* Override the modal to ensure proper mobile scrolling */
+  .order-details-modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 1rem;
+    /* Enable scrolling on the modal backdrop */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .order-details-modal .modal-content {
+    position: relative;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 28rem;
+    margin: auto;
+    /* Set max height to allow scrolling */
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Ensure content doesn't get cut off */
+    min-height: fit-content;
+  }
+
+  /* Make scrollbar always visible on mobile */
+  .modal-content::-webkit-scrollbar {
+    width: 12px;
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .modal-content::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Ensure the modal items list is scrollable */
+  .modal-items-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 1rem 0;
+    padding-right: 0.5rem;
+  }
 }

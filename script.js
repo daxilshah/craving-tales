@@ -125,10 +125,8 @@ function showTab(tabName) {
 }
 
 // --- DATA HELPERS ---
-const getCollectionRef = (collectionName) =>
-  collection(db, collectionName);
-const getDocRef = (collectionName, id) =>
-  doc(db, collectionName, id);
+const getCollectionRef = (collectionName) => collection(db, collectionName);
+const getDocRef = (collectionName, id) => doc(db, collectionName, id);
 
 async function fetchData(collectionName) {
   const querySnapshot = await getDocs(getCollectionRef(collectionName));
@@ -182,18 +180,21 @@ async function loadDashboardData() {
     (sum, order) => sum + (order.totalAmount || 0),
     0
   );
-  const pendingUnpaidOrders = allOrders.filter((order) => !order.isDelivered || !order.isPaymentReceived);
-  const totalReceivables = allOrders.filter((order) => !order.isPaymentReceived).reduce(
-    (sum, order) => sum + (order.totalAmount || 0),
-    0
+  const pendingUnpaidOrders = allOrders.filter(
+    (order) => !order.isDelivered || !order.isPaymentReceived
   );
+  const totalReceivables = allOrders
+    .filter((order) => !order.isPaymentReceived)
+    .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
   const pendingCount = allOrders.filter((order) => !order.isDelivered).length;
 
   document.getElementById("total-orders-stat").textContent = totalOrders;
   document.getElementById(
     "total-revenue-stat"
   ).textContent = `₹${totalRevenue.toFixed(2)}`;
-  document.getElementById("total-receivables-stat").textContent = `₹${totalReceivables.toFixed(2)}`;;
+  document.getElementById(
+    "total-receivables-stat"
+  ).textContent = `₹${totalReceivables.toFixed(2)}`;
   document.getElementById("pending-orders-stat").textContent = pendingCount;
 
   // Pending Orders List
@@ -202,8 +203,12 @@ async function loadDashboardData() {
 
   pendingUnpaidOrders.forEach((order) => {
     const orderCard = document.createElement("div");
-    const deliveryStatusColor = order.isDelivered ? "text-green-600" : "text-red-600";
-    const paymentStatusColor = order.isPaymentReceived ? "text-green-600" : "text-red-600";
+    const deliveryStatusColor = order.isDelivered
+      ? "text-green-600"
+      : "text-red-600";
+    const paymentStatusColor = order.isPaymentReceived
+      ? "text-green-600"
+      : "text-red-600";
     orderCard.className =
       "bg-white p-4 rounded-lg shadow border cursor-pointer";
     orderCard.innerHTML = `
@@ -218,11 +223,11 @@ async function loadDashboardData() {
         </div>
         <div class="flex flex-col text-nowrap gap-1 text-center">
           <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
-            order.isDelivered ? "Delivered" : "Pending"
-          }</span>
+      order.isDelivered ? "Delivered" : "Pending"
+    }</span>
           <span class="font-semibold text-sm ml-4 mr-2 badge ${paymentStatusColor}">${
-            order.isPaymentReceived ? "Paid" : "Not Paid"
-          }</span>
+      order.isPaymentReceived ? "Paid" : "Not Paid"
+    }</span>
         </div>
       </div>
     `;
@@ -237,8 +242,12 @@ async function loadDashboardData() {
   const recentOrders = allOrders.slice(0, 10);
   recentOrders.forEach((order) => {
     const orderCard = document.createElement("div");
-    const deliveryStatusColor = order.isDelivered ? "text-green-600" : "text-red-600";
-    const paymentStatusColor = order.isPaymentReceived ? "text-green-600" : "text-red-600";
+    const deliveryStatusColor = order.isDelivered
+      ? "text-green-600"
+      : "text-red-600";
+    const paymentStatusColor = order.isPaymentReceived
+      ? "text-green-600"
+      : "text-red-600";
     orderCard.className =
       "bg-white p-4 rounded-lg shadow border cursor-pointer";
     orderCard.innerHTML = `
@@ -253,11 +262,11 @@ async function loadDashboardData() {
         </div>
         <div class="flex flex-col text-nowrap gap-1 text-center">
           <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
-            order.isDelivered ? "Delivered" : "Pending"
-          }</span>
+      order.isDelivered ? "Delivered" : "Pending"
+    }</span>
           <span class="font-semibold text-sm ml-4 mr-2 badge ${paymentStatusColor}">${
-            order.isPaymentReceived ? "Paid" : "Not Paid"
-          }</span>
+      order.isPaymentReceived ? "Paid" : "Not Paid"
+    }</span>
         </div>
       </div>
     `;
@@ -495,7 +504,7 @@ async function renderMenuManager(container) {
     packagingListDiv.innerHTML = "";
     document.getElementById("menu-id").value = "";
     await loadMenu();
-  }
+  };
 
   // Inside renderMenuManager(container)
   const addIngredientField = (item = {}) => {
@@ -613,7 +622,9 @@ async function renderMenuManager(container) {
     ).map((item) => ({
       value: parseInt(item.querySelector(".package-value").value),
       mrp: parseFloat(item.querySelector(".package-mrp").value),
-      packagingCost: parseFloat(item.querySelector(".package-packaging-cost").value),
+      packagingCost: parseFloat(
+        item.querySelector(".package-packaging-cost").value
+      ),
     }));
 
     const id = form.querySelector("#menu-id").value;
@@ -776,7 +787,9 @@ async function filterAndRenderMenuCards(category) {
     (btn) =>
       (btn.onclick = async () => {
         if (confirm("Are you sure?")) {
-          const itemToDuplicate = menuCache.find((i) => i.id === btn.dataset.id);
+          const itemToDuplicate = menuCache.find(
+            (i) => i.id === btn.dataset.id
+          );
           if (!itemToDuplicate) return;
           const duplicatedItem = {
             ...itemToDuplicate,
@@ -1014,7 +1027,8 @@ async function renderOrderManager(container) {
       const itemElectricityCost =
         (totalDuration * ELECTRICITY_COST_PER_HOUR) / 60;
 
-      const itemPackagingCost = (selectedPackage.packagingCost ?? 0) * orderedQuantity;
+      const itemPackagingCost =
+        (selectedPackage.packagingCost ?? 0) * orderedQuantity;
 
       totalMakingCost += itemMakingCost;
       totalElectricityCost += itemElectricityCost;
@@ -1070,9 +1084,13 @@ async function loadOrders() {
     .forEach((order) => {
       const orderCard = document.createElement("div");
       const deliveryStatusText = order.isDelivered ? "Delivered" : "Pending";
-      const deliveryStatusColor = order.isDelivered ? "text-green-600" : "text-red-600";
+      const deliveryStatusColor = order.isDelivered
+        ? "text-green-600"
+        : "text-red-600";
       const paymentStatusText = order.isPaymentReceived ? "Paid" : "Not Paid";
-      const paymentStatusColor = order.isPaymentReceived ? "text-green-600" : "text-red-600";
+      const paymentStatusColor = order.isPaymentReceived
+        ? "text-green-600"
+        : "text-red-600";
 
       orderCard.className =
         "bg-white p-4 rounded-lg shadow border cursor-pointer";
@@ -1099,9 +1117,10 @@ async function loadOrders() {
             </div>
             <ul class="text-sm mt-3 list-disc list-inside bg-gray-50 p-2 rounded">
                 ${order.items
-                  .map((item) => `<li class="mb-1">${item.quantity} x ${item.name} (Pack of ${
-                  item.packagingValue
-                })</li>`)
+                  .map(
+                    (item) =>
+                      `<li class="mb-1">${item.quantity} x ${item.name} (Pack of ${item.packagingValue})</li>`
+                  )
                   .join("")}
             </ul>
         `;
@@ -1138,8 +1157,8 @@ function showOrderDetails(orderId) {
       return `
             <li class="bg-gray-100 p-2 rounded">
                 <span>${item.quantity} x ${item.name} (Pack of ${
-                  item.packagingValue
-                })</span><br/>
+        item.packagingValue
+      })</span><br/>
                 <p class="text-sm text-gray-500 flex justify-between">
                     Making Cost: <span> ₹${item.makingCost.toFixed(2)}</span>
                 </p>
@@ -1167,13 +1186,13 @@ function showOrderDetails(orderId) {
 
   const modal = document.createElement("div");
   modal.className =
-    "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50";
+    "order-details-modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-start z-50 p-4";
 
   const deliveredText = order.isDelivered ? "Delivered" : "Pending";
   const paymentReceivedText = order.isPaymentReceived ? "Paid" : "Not Paid";
 
   modal.innerHTML = `
-    <div class="relative bg-white p-6 rounded-lg shadow-xl max-w-lg w-full">
+    <div class="modal-content relative bg-white p-6 rounded-lg shadow-xl max-w-lg w-full my-8">
         <h2 class="text-2xl font-bold mb-1">Order Details for ${
           order.orderBy
         }</h2>
@@ -1189,25 +1208,25 @@ function showOrderDetails(orderId) {
         <p class="font-bold">Payment Status: <span class="text-${
           order.isPaymentReceived ? "green" : "red"
         }-600">${paymentReceivedText}</span></p>
-        <div class="flex">
+        <div class="flex flex-wrap gap-2 mt-2">
           <div class="mt-1">
               <label class="inline-flex items-center">
                   <input type="checkbox" class="form-checkbox" id="delivered-checkbox" ${
                     order.isDelivered ? "checked" : ""
                   }>
-                  <span class="ml-2">Mark as Delivered</span>
+                  <span class="ml-2 text-sm">Mark as Delivered</span>
               </label>
           </div>
-          <div class="mt-1 ml-4">
+          <div>
               <label class="inline-flex items-center">
                   <input type="checkbox" class="form-checkbox" id="order-payment-received" ${
                     order.isPaymentReceived ? "checked" : ""
                   }>
-                  <span class="ml-2">Payment Received</span>
+                  <span class="ml-2 text-sm">Payment Received</span>
               </label>
           </div>
         </div>
-        <ul class="space-y-2 mt-4">
+        <ul class="modal-items-list space-y-2 mt-4">
             ${itemsHtml}
         </ul>
         <div class="mt-4 pt-4 border-t border-gray-200">
@@ -1221,11 +1240,17 @@ function showOrderDetails(orderId) {
               order.totalAmount || 0
             ).toFixed(2)}</span></p>
         </div>
-        <button class="mt-6 w-full bg-black text-white px-4 py-2 rounded-md" onclick="document.body.removeChild(this.closest('.fixed'));">Close</button>
+        <button class="mt-6 w-full bg-black text-white px-4 py-2 rounded-md" onclick="document.body.removeChild(this.closest('.order-details-modal'));">Close</button>
     </div>
     `;
 
   document.body.appendChild(modal);
+  // Close modal when clicking outside
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
 
   const deliveredCheckbox = modal.querySelector("#delivered-checkbox");
   deliveredCheckbox.onchange = async (e) => {
@@ -1237,7 +1262,7 @@ function showOrderDetails(orderId) {
 
     await loadOrders();
     await loadDashboardData();
-    document.body.removeChild(modal); 
+    document.body.removeChild(modal);
   };
 
   const paymentCheckbox = modal.querySelector("#order-payment-received");
@@ -1250,6 +1275,6 @@ function showOrderDetails(orderId) {
 
     await loadOrders();
     await loadDashboardData();
-    document.body.removeChild(modal); 
+    document.body.removeChild(modal);
   };
 }
