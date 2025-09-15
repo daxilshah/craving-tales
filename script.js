@@ -43,7 +43,19 @@ const signOutSection = document.getElementById("signOutSection");
 const userDetails = document.getElementById("userDetails");
 const mainTabs = document.getElementById("main-tabs");
 const tabContent = document.getElementById("tabContent");
+
 const ELECTRICITY_COST_PER_HOUR = 24;
+const PACKAGING_OPTIONS = [
+  ...Array(12)
+    .keys()
+    .map((i) => ({ value: i + 1, label: `Pack of ${i + 1}` })),
+  { value: 50, label: "50gm" },
+  { value: 100, label: "100gm" },
+  { value: 200, label: "200gm" },
+  { value: 250, label: "250gm" },
+  { value: 500, label: "500gm" },
+  { value: 1000, label: "1000gm" },
+];
 
 let currentUser = null;
 let ingredientsCache = [];
@@ -568,14 +580,12 @@ async function renderMenuManager(container) {
       "dynamic-list-item flex flex-col md:flex-row gap-2 items-center relative";
     div.innerHTML = `
       <select class="package-value w-full md:flex-grow p-2 border rounded-md">
-        ${[...Array(12).keys()]
-          .map(
-            (i) =>
-              `<option value="${i + 1}" ${
-                pack.value === i + 1 ? "selected" : ""
-              }>Pack of ${i + 1}</option>`
-          )
-          .join("")}
+        ${PACKAGING_OPTIONS.map(
+          (option) =>
+            `<option value="${option.value}" ${
+              pack.value == option.value ? "selected" : ""
+            }>${option.label}</option>`
+        ).join("")}
       </select>
       <input required class="package-mrp w-full md:w-32 p-2 border rounded-md" type="number" placeholder="MRP" value="${
         pack.mrp || ""
@@ -729,12 +739,15 @@ function renderMenuCard(item) {
           <h5 class="text-l mt-2 mb-1"><strong>MRP Costs:</strong></h5>
           <ul class="text-sm list-disc list-inside space-y-1">
             ${item.packagingOptions
-              .map(
-                (pack) =>
-                  `<li class="flex justify-between"><strong>Pack of ${
-                    pack.value
-                  }: </strong>₹${pack.mrp.toFixed(2)}</li>`
-              )
+              .map((pack) => {
+                const option = PACKAGING_OPTIONS.find(
+                  (opt) => opt.value == pack.value
+                );
+                const label = option ? option.label : pack.value;
+                return `<li class="flex justify-between"><strong>${label}: </strong>₹${pack.mrp.toFixed(
+                  2
+                )}</li>`;
+              })
               .join("")}
           </ul>
           <div class="mt-4 font-normal">
@@ -865,14 +878,12 @@ async function filterAndRenderMenuCards(category) {
               "dynamic-list-item flex flex-col md:flex-row gap-2 items-center relative";
             div.innerHTML = `
               <select class="package-value w-full md:flex-grow p-2 border rounded-md">
-                ${[...Array(12).keys()]
-                  .map(
-                    (i) =>
-                      `<option value="${i + 1}" ${
-                        pack.value === i + 1 ? "selected" : ""
-                      }>Pack of ${i + 1}</option>`
-                  )
-                  .join("")}
+                ${PACKAGING_OPTIONS.map(
+                  (option) =>
+                    `<option value="${option.value}" ${
+                      pack.value == option.value ? "selected" : ""
+                    }>${option.label}</option>`
+                ).join("")}
               </select>
               <input required class="package-mrp p-2 border rounded-md" type="number" placeholder="MRP" value="${
                 pack.mrp || ""
@@ -959,7 +970,7 @@ async function renderOrderManager(container) {
       const quantity = parseInt(inputQuantity.value);
       const selectedPackage = packagingSelect
         ? menuItem.packagingOptions.find(
-            (p) => p.value === parseInt(packagingSelect.value)
+            (p) => p.value == packagingSelect.value
           )
         : null;
 
@@ -977,10 +988,15 @@ async function renderOrderManager(container) {
         packagingSelect.innerHTML =
           `<option value="">Select Packaging</option>` +
           selectedItem.packagingOptions
-            .map(
-              (p) =>
-                `<option value="${p.value}">Pack of ${p.value} (₹${p.mrp})</option>`
-            )
+            .map((p) => {
+              const option = PACKAGING_OPTIONS.find(
+                (opt) => opt.value == p.value
+              );
+              const label = option ? option.label : p.value;
+              return `<option value="${p.value}">
+                          ${label} (₹${p.mrp})
+                        </option>`;
+            })
             .join("");
       }
       updatePrice();
@@ -1119,7 +1135,7 @@ async function loadOrders() {
                 ${order.items
                   .map(
                     (item) =>
-                      `<li class="mb-1">${item.quantity} x ${item.name} (Pack of ${item.packagingValue})</li>`
+                      `<li class="mb-1">${item.quantity} x ${item.name} (${PACKAGING_OPTIONS.find(o => o.value === item.packagingValue).label})</li>`
                   )
                   .join("")}
             </ul>
@@ -1156,9 +1172,7 @@ function showOrderDetails(orderId) {
     .map((item) => {
       return `
             <li class="bg-gray-100 p-2 rounded">
-                <span>${item.quantity} x ${item.name} (Pack of ${
-        item.packagingValue
-      })</span><br/>
+                <span>${item.quantity} x ${item.name} (${PACKAGING_OPTIONS.find(o => o.value === item.packagingValue).label})</span><br/>
                 <p class="text-sm text-gray-500 flex justify-between">
                     Making Cost: <span> ₹${item.makingCost.toFixed(2)}</span>
                 </p>
