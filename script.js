@@ -44,11 +44,14 @@ const userDetails = document.getElementById("userDetails");
 const mainTabs = document.getElementById("main-tabs");
 const tabContent = document.getElementById("tabContent");
 
+let currentOrdersPage = 1;
+const PAGE_SIZE = 10;
 const ELECTRICITY_COST_PER_HOUR = 24;
 const PACKAGING_OPTIONS = [
   ...Array(12)
     .keys()
     .map((i) => ({ value: i + 1, label: `Pack of ${i + 1}` })),
+  { value: 20, label: "Pack of 20" },
   { value: 50, label: "50gm" },
   { value: 100, label: "100gm" },
   { value: 150, label: "150gm" },
@@ -173,13 +176,13 @@ async function renderDashboard(container) {
         <h3 class="text-lg font-bold mb-4">Pending/Unpaid Orders List</h3>
         <div id="pending-orders-list" class="space-y-4"></div>
       </div>
-      <div>
-        <h3 class="text-lg font-bold mt-8 mb-4">Recent Orders</h3>
-        <div id="recent-orders-list" class="space-y-4"></div>
       </div>
-    </div>
-  `;
+      `;
 
+  // <div>
+  //   <h3 class="text-lg font-bold mt-8 mb-4">Recent Orders</h3>
+  //   <div id="recent-orders-list" class="space-y-4"></div>
+  // </div>
   await loadDashboardData();
 }
 
@@ -248,44 +251,51 @@ async function loadDashboardData() {
     pendingListContainer.appendChild(orderCard);
   });
 
-  // Recent Orders List (Top 10)
-  const recentListContainer = document.getElementById("recent-orders-list");
-  recentListContainer.innerHTML = "";
+  if (!pendingUnpaidOrders.length) {
+    const noPendings = document.createElement("div");
+    noPendings.className = "text-sm font-bold";
+    noPendings.innerHTML = `No Pending orders or Unpaid orders as of now. Crave more!`;
+    pendingListContainer.appendChild(noPendings);
+  }
 
-  const recentOrders = allOrders.slice(0, 10);
-  recentOrders.forEach((order) => {
-    const orderCard = document.createElement("div");
-    const deliveryStatusColor = order.isDelivered
-      ? "text-green-600"
-      : "text-red-600";
-    const paymentStatusColor = order.isPaymentReceived
-      ? "text-green-600"
-      : "text-red-600";
-    orderCard.className =
-      "bg-white p-4 rounded-lg shadow border cursor-pointer";
-    orderCard.innerHTML = `
-      <div class="flex justify-between items-center">
-        <div>
-          <h4 class="font-bold">${order.orderBy} - ₹${order.totalAmount.toFixed(
-      2
-    )}</h4>
-          <p class="text-sm text-gray-500">ID: ${order.orderId} | ${new Date(
-      order.orderDate
-    ).toLocaleDateString()}</p>
-        </div>
-        <div class="flex flex-col text-nowrap gap-1 text-center">
-          <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
-      order.isDelivered ? "Delivered" : "Pending"
-    }</span>
-          <span class="font-semibold text-sm ml-4 mr-2 badge ${paymentStatusColor}">${
-      order.isPaymentReceived ? "Paid" : "Not Paid"
-    }</span>
-        </div>
-      </div>
-    `;
-    orderCard.onclick = () => showOrderDetails(order.id);
-    recentListContainer.appendChild(orderCard);
-  });
+  // Recent Orders List (Top 10)
+  // const recentListContainer = document.getElementById("recent-orders-list");
+  // recentListContainer.innerHTML = "";
+
+  // const recentOrders = allOrders.slice(0, 10);
+  // recentOrders.forEach((order) => {
+  //   const orderCard = document.createElement("div");
+  //   const deliveryStatusColor = order.isDelivered
+  //     ? "text-green-600"
+  //     : "text-red-600";
+  //   const paymentStatusColor = order.isPaymentReceived
+  //     ? "text-green-600"
+  //     : "text-red-600";
+  //   orderCard.className =
+  //     "bg-white p-4 rounded-lg shadow border cursor-pointer";
+  //   orderCard.innerHTML = `
+  //     <div class="flex justify-between items-center">
+  //       <div>
+  //         <h4 class="font-bold">${order.orderBy} - ₹${order.totalAmount.toFixed(
+  //     2
+  //   )}</h4>
+  //         <p class="text-sm text-gray-500">ID: ${order.orderId} | ${new Date(
+  //     order.orderDate
+  //   ).toLocaleDateString()}</p>
+  //       </div>
+  //       <div class="flex flex-col text-nowrap gap-1 text-center">
+  //         <span class="font-semibold text-sm badge ${deliveryStatusColor}">${
+  //     order.isDelivered ? "Delivered" : "Pending"
+  //   }</span>
+  //         <span class="font-semibold text-sm ml-4 mr-2 badge ${paymentStatusColor}">${
+  //     order.isPaymentReceived ? "Paid" : "Not Paid"
+  //   }</span>
+  //       </div>
+  //     </div>
+  //   `;
+  //   orderCard.onclick = () => showOrderDetails(order.id);
+  //   recentListContainer.appendChild(orderCard);
+  // });
 }
 
 // --- INGREDIENTS MANAGER ---
@@ -432,7 +442,6 @@ function calculateAndUpdateCost() {
   if (!costInput.dataset.manualOverride) {
     costInput.value = totalCost.toFixed(2);
   }
-
   return totalCost;
 }
 
@@ -475,9 +484,16 @@ async function renderMenuManager(container) {
           <button type="button" id="add-recipe-ingredient" class="mt-2 text-sm bg-gray-200 px-3 py-1 rounded-md">+ Add Ingredient</button>
         </div>
         <div>
-          <h4 class="font-semibold mb-2">Packaging Options</h4>
+          <h4 class="text-lg font-bold mb-2">
+            Packaging Options
+            <a href="#" id="need-suggestion" class="active-color px-2 text-sm cursor-pointer">
+              (Need Suggestions?)
+            </a>
+          </h4>
           <div id="packaging-options-list" class="space-y-2"></div>
-          <button type="button" id="add-packaging-option" class="mt-2 text-sm bg-gray-200 px-3 py-1 rounded-md">+ Add Packaging Option</button>
+          <button type="button" id="add-packaging-option" class="mt-2 text-sm bg-gray-200 px-3 py-1 rounded-md">
+            + Add Packaging Option
+          </button>
         </div>
         <div>
           <label for="recipe-cost" class="font-semibold text-sm mb-1">Recipe Cost (₹)</label>
@@ -502,6 +518,61 @@ async function renderMenuManager(container) {
   `;
 
   await loadIngredients();
+
+  const needSuggestionLink = container.querySelector("#need-suggestion");
+
+  needSuggestionLink.onclick = (e) => {
+    e.preventDefault();
+    showSuggestionPopup();
+  };
+
+  function showSuggestionPopup() {
+    const modal = document.createElement("div");
+    modal.className =
+      "fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50";
+
+    modal.innerHTML = `
+      <div class="bg-white p-6 rounded-lg shadow-xl max-w-xl w-full relative">
+        <h2 class="text-xl font-bold mb-4">Suggested MRPs</h2>
+        <label class="block mb-2 font-semibold">Margin %</label>
+        <input type="number" id="margin-percent" value="315"
+          class="p-2 border rounded-md w-full mb-4">
+
+        <div id="suggestions-list" class="space-y-2 max-h-80 overflow-y-auto"></div>
+
+        <button class="mt-6 w-full bg-black text-white px-4 py-2 rounded-md"
+          onclick="document.body.removeChild(this.closest('.fixed'));">
+          Close
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const marginInput = modal.querySelector("#margin-percent");
+    const suggestionsList = modal.querySelector("#suggestions-list");
+
+    function updateSuggestions() {
+      const marginPercent = parseFloat(marginInput.value) || 0;
+      const recipeCost =
+        parseFloat(document.getElementById("recipe-cost").value) || 0;
+      const bakedQty =
+        parseFloat(document.getElementById("baked-quantity").value) || 1;
+
+      suggestionsList.innerHTML = PACKAGING_OPTIONS.map((opt) => {
+        const unitCost = recipeCost / bakedQty;
+        const possibleMrp = unitCost * opt.value * (marginPercent / 100);
+        return `
+          <div class="flex justify-between items-center bg-gray-100 p-2 rounded">
+            <span class="font-medium">${opt.label}</span>
+            <span class="font-semibold">₹${possibleMrp.toFixed(2)}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    marginInput.oninput = updateSuggestions;
+    updateSuggestions();
+  }
 
   const ingredientsListDiv = container.querySelector(
     "#recipe-ingredients-list"
@@ -845,27 +916,58 @@ async function filterAndRenderMenuCards(category) {
         ingredientsListDiv.innerHTML = "";
         item.ingredients.forEach((ing) => {
           const div = document.createElement("div");
-          div.className = "dynamic-list-item";
+          div.className =
+            "dynamic-list-item flex flex-col md:flex-row gap-2 items-center relative";
           div.innerHTML = `
-                <select required class="ingredient-select flex-grow p-2 border rounded-md bg-white">
-                    <option value="">Select Ingredient</option>
-                    ${ingredientsCache
-                      .map(
-                        (i) =>
-                          `<option value="${i.id}" ${
-                            ing.id === i.id ? "selected" : ""
-                          }>${i.name}</option>`
-                      )
-                      .join("")}
-                </select>
-                <input required class="consumed-quantity p-2 border rounded-md w-32" type="number" placeholder="Quantity" value="${
-                  ing.consumedQuantity || ""
-                }">
-                <button type="button" class="remove-ingredient-btn text-red-500 font-bold">X</button>
-            `;
+          <select required class="ingredient-select w-full p-2 border rounded-md bg-white">
+            <option value="">Select Ingredient</option>
+            ${ingredientsCache
+              .map(
+                (i) =>
+                  `<option value="${i.id}" ${ing.id === i.id ? "selected" : ""}>${
+                    i.name
+                  }</option>`
+              )
+              .join("")}
+          </select>
+          <input required class="consumed-quantity w-full md:w-32 p-2 border rounded-md"
+            type="number" value="${ing.consumedQuantity || ""}">
+          <span class="ingredient-cost-display text-sm font-semibold text-gray-700 w-full md:w-auto"></span>
+          <button type="button" class="remove-ingredient-btn absolute top-2 right-2 text-red-500 font-bold">X</button>
+        `;
           ingredientsListDiv.appendChild(div);
-          div.querySelector(".remove-ingredient-btn").onclick = () =>
-            div.remove();
+          ingredientsListDiv.addEventListener("click", (e) => {
+            if (e.target.classList.contains("remove-ingredient-btn")) {
+              const row = e.target.closest(".dynamic-list-item");
+              if (row) {
+                row.remove();
+                calculateAndUpdateCost();
+              }
+            }
+          });
+
+          // add same listeners as addIngredientField()
+          const updateCost = () => {
+            const select = div.querySelector(".ingredient-select");
+            const input = div.querySelector(".consumed-quantity");
+            const costDisplay = div.querySelector(".ingredient-cost-display");
+            const ingredient = ingredientsCache.find(
+              (i) => i.id === select.value
+            );
+            const quantity = parseFloat(input.value);
+            if (ingredient && quantity) {
+              const cost =
+                (quantity * ingredient.costPrice) / ingredient.quantity;
+              costDisplay.textContent = `(₹${cost.toFixed(2)})`;
+            } else {
+              costDisplay.textContent = "";
+            }
+            calculateAndUpdateCost();
+          };
+
+          div.querySelector(".ingredient-select").onchange = updateCost;
+          div.querySelector(".consumed-quantity").oninput = updateCost;
+          updateCost(); // initialize on load
         });
 
         const packagingListDiv = document.getElementById(
@@ -1091,27 +1193,34 @@ async function renderOrderManager(container) {
   await loadOrders();
 }
 
-async function loadOrders() {
+async function loadOrders(page = 1) {
   orders = await fetchData("orders");
+  orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
   const table = document.getElementById("orders-table");
-  table.innerHTML = ""; // Clear existing content
+  table.innerHTML = "";
 
-  orders
-    .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
-    .forEach((order) => {
-      const orderCard = document.createElement("div");
-      const deliveryStatusText = order.isDelivered ? "Delivered" : "Pending";
-      const deliveryStatusColor = order.isDelivered
-        ? "text-green-600"
-        : "text-red-600";
-      const paymentStatusText = order.isPaymentReceived ? "Paid" : "Not Paid";
-      const paymentStatusColor = order.isPaymentReceived
-        ? "text-green-600"
-        : "text-red-600";
+  // Pagination logic
+  const totalPages = Math.ceil(orders.length / PAGE_SIZE);
+  currentOrdersPage = Math.max(1, Math.min(page, totalPages));
+  const start = (currentOrdersPage - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  const paginatedOrders = orders.slice(start, end);
 
-      orderCard.className =
-        "bg-white p-4 rounded-lg shadow border cursor-pointer";
-      orderCard.innerHTML = `
+  paginatedOrders.forEach((order) => {
+    const orderCard = document.createElement("div");
+    const deliveryStatusText = order.isDelivered ? "Delivered" : "Pending";
+    const deliveryStatusColor = order.isDelivered
+      ? "text-green-600"
+      : "text-red-600";
+    const paymentStatusText = order.isPaymentReceived ? "Paid" : "Not Paid";
+    const paymentStatusColor = order.isPaymentReceived
+      ? "text-green-600"
+      : "text-red-600";
+
+    orderCard.className =
+      "bg-white p-4 rounded-lg shadow border cursor-pointer";
+    orderCard.innerHTML = `
             <div class="flex justify-between items-start">
                 <div>
                     <h4 class="font-bold">${order.orderBy}</h4>
@@ -1136,29 +1245,54 @@ async function loadOrders() {
                 ${order.items
                   .map(
                     (item) =>
-                      `<li class="mb-1">${item.quantity} x ${item.name} (${PACKAGING_OPTIONS.find(o => o.value === item.packagingValue).label})</li>`
+                      `<li class="mb-1">${item.quantity} x ${item.name} (${
+                        PACKAGING_OPTIONS.find(
+                          (o) => o.value === item.packagingValue
+                        ).label
+                      })</li>`
                   )
                   .join("")}
             </ul>
         `;
 
-      // Attach the click event listener in JavaScript
-      orderCard.addEventListener("click", (e) => {
-        // Check if the click was on the delete button to prevent showing details
-        if (!e.target.classList.contains("delete-order")) {
-          showOrderDetails(order.id);
-        }
-      });
-
-      table.appendChild(orderCard);
+    // Attach the click event listener in JavaScript
+    orderCard.addEventListener("click", (e) => {
+      // Check if the click was on the delete button to prevent showing details
+      if (!e.target.classList.contains("delete-order")) {
+        showOrderDetails(order.id);
+      }
     });
 
+    table.appendChild(orderCard);
+  });
+
+  // Add pagination controls
+  const paginationDiv = document.createElement("div");
+  paginationDiv.className = "flex justify-between items-center mt-4";
+
+  paginationDiv.innerHTML = `
+    <button id="prev-orders" class="px-3 py-1 bg-black text-white rounded-md" ${
+      currentOrdersPage === 1 ? "disabled" : ""
+    }>Prev</button>
+    <span>Page ${currentOrdersPage} of ${totalPages || 1}</span>
+    <button id="next-orders" class="px-3 py-1 bg-black text-white rounded-md" ${
+      currentOrdersPage === totalPages ? "disabled" : ""
+    }>Next</button>
+  `;
+  table.appendChild(paginationDiv);
+
+  document.getElementById("prev-orders").onclick = () =>
+    loadOrders(currentOrdersPage - 1);
+  document.getElementById("next-orders").onclick = () =>
+    loadOrders(currentOrdersPage + 1);
+
+  // Attach delete listeners (must be re-bound after pagination render)
   document.querySelectorAll(".delete-order").forEach(
     (btn) =>
       (btn.onclick = async () => {
         if (confirm("Are you sure?")) {
           await deleteDoc(getDocRef("orders", btn.dataset.id));
-          await loadOrders();
+          await loadOrders(currentOrdersPage); // reload same page
         }
       })
   );
@@ -1173,7 +1307,9 @@ function showOrderDetails(orderId) {
     .map((item) => {
       return `
             <li class="bg-gray-100 p-2 rounded">
-                <span>${item.quantity} x ${item.name} (${PACKAGING_OPTIONS.find(o => o.value === item.packagingValue).label})</span><br/>
+                <span>${item.quantity} x ${item.name} (${
+                  PACKAGING_OPTIONS.find((o) => o.value === item.packagingValue).label
+                })</span><br/>
                 <p class="text-sm text-gray-500 flex justify-between">
                     Making Cost: <span> ₹${item.makingCost.toFixed(2)}</span>
                 </p>
