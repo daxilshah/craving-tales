@@ -51,6 +51,7 @@ const PACKAGING_OPTIONS = [
     .map((i) => ({ value: i + 1, label: `Pack of ${i + 1}` })),
   { value: 50, label: "50gm" },
   { value: 100, label: "100gm" },
+  { value: 150, label: "150gm" },
   { value: 200, label: "200gm" },
   { value: 250, label: "250gm" },
   { value: 500, label: "500gm" },
